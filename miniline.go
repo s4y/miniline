@@ -13,6 +13,8 @@ func (_ InterruptedError) Error() string {
 	return "Interrupted"
 }
 
+var ErrInterrupted error = InterruptedError{}
+
 type lineReader struct {
 	reader *bufio.Reader
 	writer *bufio.Writer
@@ -109,7 +111,7 @@ func (lr *lineReader) readLine() error {
 			}
 			continue
 		case 0x03: // ^C
-			return InterruptedError{}
+			return ErrInterrupted
 		case 0x1b: // ESC
 			if err := lr.readEscape(); err != nil {
 				return err
