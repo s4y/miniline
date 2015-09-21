@@ -8,25 +8,33 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+// InterruptedError represents the user having exited the prompt with ^C
 type InterruptedError struct{}
 
-func (_ InterruptedError) Error() string {
+// Error is just the string "Interrupted"
+func (e InterruptedError) Error() string {
 	return "Interrupted"
 }
 
+// ErrInterrupted is a singleton InterruptedError
 var ErrInterrupted error = InterruptedError{}
 
-type tty struct {
+type tty interface {
+	enterRaw() error
+	exitRaw() error
+}
+
+type realTTY struct {
 	fd    uintptr
 	state *terminal.State
 }
 
-func (tty *tty) enterRaw() (err error) {
+func (tty *realTTY) enterRaw() (err error) {
 	tty.state, err = terminal.MakeRaw(int(tty.fd))
 	return
 }
 
-func (tty *tty) exitRaw() (err error) {
+func (tty *realTTY) exitRaw() (err error) {
 	err = terminal.Restore(int(tty.fd), tty.state)
 	tty.state = nil
 	return
@@ -46,7 +54,7 @@ func newLineReader(ttyFile *os.File, prompt string) lineReader {
 		prompt: prompt,
 		reader: bufio.NewReader(ttyFile),
 		writer: bufio.NewWriter(ttyFile),
-		tty:    tty{fd: ttyFile.Fd()},
+		tty:    &realTTY{fd: ttyFile.Fd()},
 	}
 }
 
@@ -58,6 +66,7 @@ func (lr *lineReader) esc(s string) (err error) {
 	return
 }
 
+// pprompt re-outputs the prompt
 func (lr *lineReader) pprompt() (err error) {
 	_, err = lr.writer.WriteString(lr.prompt)
 	return
@@ -66,6 +75,9 @@ func (lr *lineReader) pprompt() (err error) {
 // pbuf re-writes the lr.buf to the terminal starting at lr.pos, and restores
 // the cursor to its previous position. Used when editing the middle of a line.
 func (lr *lineReader) pbuf() (err error) {
+	if lr.pos == len(lr.buf) {
+		return
+	}
 	err = lr.esc("s")
 	if err == nil {
 		_, err = lr.writer.Write(lr.buf[lr.pos:])
@@ -136,7 +148,9 @@ func (lr *lineReader) readEscape() (err error) {
 // readLine is lineReader's entry point. It reads a line of user input.
 func (lr *lineReader) readLine() error {
 
-	lr.tty.enterRaw()
+	if err := lr.tty.enterRaw(); err != nil {
+		return err
+	}
 	defer lr.tty.exitRaw()
 
 	lr.pprompt()
