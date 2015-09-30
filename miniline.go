@@ -1,3 +1,5 @@
+// +build darwin dragonfly freebsd linux nacl netbsd openbsd solaris
+
 package miniline
 
 import (
@@ -7,17 +9,6 @@ import (
 
 	"golang.org/x/crypto/ssh/terminal"
 )
-
-// InterruptedError represents the user having exited the prompt with ^C
-type InterruptedError struct{}
-
-// Error is just the string "Interrupted"
-func (e InterruptedError) Error() string {
-	return "Interrupted"
-}
-
-// ErrInterrupted is a singleton InterruptedError
-var ErrInterrupted error = InterruptedError{}
 
 type tty interface {
 	enterRaw() error
