@@ -2,11 +2,11 @@
 
 package miniline
 
-import(
-  "bufio"
-  "os"
-  "fmt"
-  "strings"
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
 )
 
 // ReadLine returns a line of user input (terminated by a newline or or ^D)
@@ -14,11 +14,11 @@ import(
 // Note that on Windows, Ctrl-C will end the process from another thread.
 func ReadLine(prompt string) (line string, err error) {
 
-    fmt.Print(prompt)
-	
+	fmt.Print(prompt)
+
 	in := bufio.NewReader(os.Stdin)
 
-	line, err = in.ReadString('\n')  
+	line, err = in.ReadString('\n')
 	if err != nil {
 		err = ErrInterrupted
 	} else if len(line) > 0 {
