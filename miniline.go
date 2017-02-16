@@ -174,6 +174,11 @@ func (lr *lineReader) readLine() error {
 				return ErrInterrupted
 			case 4, 13: // ^D, ^M (which is also the return key)
 				return nil
+			case 8: // ^H
+				if err := lr.backspace(); err != nil {
+					return err
+				}
+				continue
 			case 26: // ^Z
 				lr.tty.exitRaw()
 				syscall.Kill(0, syscall.SIGSTOP)
